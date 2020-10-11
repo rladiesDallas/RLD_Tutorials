@@ -1,0 +1,101 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages
+
+```{r}
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+```
+
+Helper function to find the % of values missing in each column
+
+```{r}
+get_percent_missing = function(df) {
+  sapply(df, function(u) {
+    num_missing = length(which(is.na(u)))
+    pct_missing = round(num_missing / nrow(df) * 100, 2)
+    c(num_missing=num_missing, pct_missing=pct_missing)
+  }) %>% t %>% data.frame
+}
+```
+
+Load the data
+```{r}
+data_path = 'data/prosperLoanData.csv'
+dat_df0 = read.csv(data_path)
+dat_df0
+```
+
+```{r}
+missing_data_pct_df = get_percent_missing(dat_df0)
+missing_data_pct_df
+```
+
+```{r}
+missing_data_pct = missing_data_pct_df %>% 
+  select(pct_missing) %>% t %>% data.frame() %>%
+  unlist
+
+missing_data_pct
+```
+
+
+```{r}
+dim(dat_df0)
+#sapply(dat_df0, class)
+```
+
+```{r}
+summary(dat_df0)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+Data/record duplication observed. These 6 rows only differ in their values of `ProsperScore`
+
+```{r}
+dat_df0 %>% filter(ListingKey == '17A93590655669644DB4C06')
+```
+
+```{r}
+dat_df0 %>% filter(ListingKey == '349D3587495831350F0F648')
+```
+
+
+```{r}
+dat_df = dat_df0 %>%
+  select_at(names(missing_data_pct[missing_data_pct <= 80]))%>%
+  group_by(ListingKey) %>%
+  slice(which.min(ProsperScore)) 
+summary(dat_df)
+```
+
+```{r}
+get_percent_missing(dat_df)
+```
+
+```{r}
+dir.create('data')
+csv_to_save = 'data/loan_prosper_data_processed.csv'
+write.csv(dat_df, file=csv_to_save, na='')
+```
+
+
+
